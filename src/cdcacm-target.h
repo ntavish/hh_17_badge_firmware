@@ -34,4 +34,12 @@ extern void cdcacm_target_usbd_after_init_and_before_first_poll(void);
 /* see cdcacm_data_rx_cb() in cdcacm.c for more on this */
 extern void cdcacm_target_data_rx_cb_before_return(void);
 
+
+int init_cdcacm(void);
+extern usbd_device *_usbd_dev;
+
+/* signals that config descriptors have been read */
+extern void cdc_acm_ready_cb(void);
+
+
 #endif

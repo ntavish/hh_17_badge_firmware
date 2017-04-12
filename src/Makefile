@@ -24,7 +24,9 @@ UCMX_DIR ?=../lib/unicore-mx
 #VPATH += $(COMMON_DIR)/usb_cdcacm
 #CPPFLAGS += -I$(COMMON_DIR)/usb_cdcacm
 
-OBJS = cdcacm.o
+CFLAGS += -std=c99
+
+OBJS = cdcacm.o serial.o circular_buf.o
 # OBJS = usbhid.o
 
 LDSCRIPT = stm32f072cb.ld

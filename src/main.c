@@ -23,15 +23,54 @@
 #include <unicore-mx/stm32/gpio.h>
 #include <unicore-mx/stm32/crs.h>
 #include <unicore-mx/stm32/syscfg.h>
-#include <unicore-mx/usbd/usbd.h>
-#include <unicore-mx/usb/class/cdc.h>
 #include <unicore-mx/cm3/scb.h>
-#include "cdcacm-target.h"
+#include <unicore-mx/stm32/timer.h>
+#include <unicore-mx/stm32/flash.h>
+#include <string.h>
+#include "serial.h"
 
-void cdcacm_target_init(void)
+
+#define PORT_LED GPIOB
+#define PIN_LED  GPIO5
+#define RCC_LED	 RCC_GPIOB
+
+
+/* for driver */
+const usbd_backend *cdcacm_target_usb_driver(void)
 {
-	
+       return USBD_STM32_FSDEV_V2;
+}
 
+static void gpio_setup(void)
+{
+	gpio_mode_setup(PORT_LED, GPIO_MODE_AF, GPIO_PUPD_PULLDOWN, PIN_LED);
+	gpio_set_output_options(PORT_LED, GPIO_OTYPE_PP, GPIO_OSPEED_100MHZ, PIN_LED); // 100mhz means highspeed actually
+	gpio_set_af(PORT_LED, GPIO_AF1, PIN_LED);
+}
+
+static void tim_setup(void)
+{
+	//timer_reset(TIM1);
+	timer_set_prescaler(TIM3, 0xFF);
+	//timer_set_clock_division(TIM1, 0xFF);
+	timer_set_period(TIM3, 0xFFF);
+
+	timer_continuous_mode(TIM3);
+	timer_direction_up(TIM3);
+
+	timer_disable_oc_output(TIM3, TIM_OC2);
+	timer_set_oc_mode(TIM3, TIM_OC2, TIM_OCM_PWM1);
+	timer_set_oc_value(TIM3, TIM_OC2, 0xFF);
+	timer_enable_oc_output(TIM3, TIM_OC2);
+	timer_enable_break_main_output(TIM3);
+	timer_enable_preload(TIM3);
+	timer_enable_counter(TIM3);
+}
+
+
+
+static void target_init(void)
+{
 	/* start HSI48 */
 	rcc_clock_setup_in_hsi48_out_48mhz();
 
@@ -44,9 +83,32 @@ void cdcacm_target_init(void)
 	/* usb HSI48 for system clock */
 	rcc_set_sysclk_source(RCC_HSI48);
 
+
+	/* Enable TIM3 clock. */
+	rcc_periph_clock_enable(RCC_TIM3);
+	/* Enable PORT_LED, Alternate Function clocks. */
+	rcc_periph_clock_enable(RCC_LED);
+	
+	gpio_setup();
+	tim_setup();
 }
 
-const usbd_backend *cdcacm_target_usb_driver(void)
+int main(void)
 {
-	return USBD_STM32_FSDEV_V2;
+	target_init();
+	serial_init();
+	
+	for(uint8_t i='a';i<='z';i++)
+	{
+		serial_write(&i, 1);
+	}
+	
+	serial_write((uint8_t*)"testing123", 10);
+	
+	while (1) 
+	{
+		//read_button();
+		usbd_poll(_usbd_dev, 0);
+	}
 }
+

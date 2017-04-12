@@ -309,6 +309,9 @@ static void cdcacm_data_rx_cb(usbd_device *usbd_dev,
 	cdcacm_target_data_rx_cb_before_return();
 }
 
+/* signals that config descriptors have been read */
+uint8_t cdc_acm_ready = 0;
+
 static void cdcacm_set_config(usbd_device *usbd_dev,
 				const struct usb_config_descriptor *cfg)
 {
@@ -317,7 +320,7 @@ static void cdcacm_set_config(usbd_device *usbd_dev,
 	usbd_ep_prepare(usbd_dev, 0x82, USBD_EP_BULK, 64, USBD_INTERVAL_NA, USBD_EP_NONE);
 	usbd_ep_prepare(usbd_dev, 0x83, USBD_EP_INTERRUPT, 16, USBD_INTERVAL_NA, USBD_EP_NONE);
 
-	rx_from_host(usbd_dev);
+	cdc_acm_ready_cb();
 }
 
 void __attribute__((weak))
@@ -326,25 +329,25 @@ cdcacm_target_usbd_after_init_and_before_first_poll(void) { /* empty */ }
 const usbd_backend_config * __attribute__((weak))
 cdcacm_target_usb_config(void) { return NULL; }
 
-int main(void)
+usbd_device *_usbd_dev;
+
+int init_cdcacm(void)
 {
-	usbd_device *usbd_dev;
-
-	cdcacm_target_init();
-
-	usbd_dev = usbd_init(cdcacm_target_usb_driver(),
+	_usbd_dev = usbd_init(cdcacm_target_usb_driver(),
 		cdcacm_target_usb_config(), &dev,
 		usbd_control_buffer, sizeof(usbd_control_buffer));
 
-	usbd_register_set_config_callback(usbd_dev, cdcacm_set_config);
-	usbd_register_setup_callback(usbd_dev, cdcacm_control_request);
+	usbd_register_set_config_callback(_usbd_dev, cdcacm_set_config);
+	usbd_register_setup_callback(_usbd_dev, cdcacm_control_request);
 
 	/* on f3, here was a busy loop after usbd init and before first poll.
 	 *  as the use of the busy loop is unknow,
 	 *  retaining the code for compatibility */
 	cdcacm_target_usbd_after_init_and_before_first_poll();
 
-	while (1) {
-		usbd_poll(usbd_dev, 0);
-	}
+	//while (1) {
+	//	usbd_poll(_usbd_dev, 0);
+	//}
+	
+	return 0;
 }
