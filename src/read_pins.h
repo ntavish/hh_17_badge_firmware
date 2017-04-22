@@ -14,7 +14,7 @@ struct touch_button
 
 void pin_init(int index);
 int read_pin(int index);
-int num_buttons();
+int num_buttons(void);
 
 extern const struct touch_button tb_table[];
 

@@ -76,12 +76,12 @@ static void set_cb()
 	}
 }
 
-int serial_write(const uint8_t *buf, int len)
+int serial_write(const char *buf, int len)
 {
 	int i;
 	for(i=0; i<len; i++)
 	{
-		circBufPush(&tx_buf, buf[i]);
+		circBufPush(&tx_buf, (uint8_t)buf[i]);
 	}
 	
 	if(tx_in_progress == 0)
