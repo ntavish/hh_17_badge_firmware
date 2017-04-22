@@ -1,38 +1,63 @@
-/*
- * This file is part of the unicore-mx project.
- *
- * Copyright (C) 2010 Gareth McMullin <gareth@blacksphere.co.nz>
- * Copyright (C) 2014 Kuldeep Singh Dhaka <kuldeepdhaka9@gmail.com>
- *
- * This library is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public License
- * along with this library.  If not, see <http://www.gnu.org/licenses/>.
- */
-
 #include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
 #include <unicore-mx/stm32/rcc.h>
 #include <unicore-mx/stm32/gpio.h>
 #include <unicore-mx/stm32/crs.h>
-#include <unicore-mx/stm32/syscfg.h>
-#include <unicore-mx/cm3/scb.h>
 #include <unicore-mx/stm32/timer.h>
-#include <unicore-mx/stm32/flash.h>
+#include <unicore-mx/cm3/nvic.h>
+#include <unicore-mx/cm3/systick.h>
 #include <string.h>
 #include "serial.h"
-
+#include "read_pins.h"
 
 #define PORT_LED GPIOB
 #define PIN_LED  GPIO5
 #define RCC_LED	 RCC_GPIOB
+
+
+/* Called when systick fires */
+void sys_tick_handler(void)
+{
+	int n = num_buttons();
+	for(int i=0; i<num_buttons(); i++)
+	{
+		if(read_pin(i) > 10)
+		{
+			serial_write(tb_table[i].name, strlen(tb_table[i].name));
+			serial_write("\r\n", 2);
+		}
+	}
+}
+
+void usb_ready_cb(void)
+{
+	cdc_acm_ready_cb();
+}
+
+void usb_poll_cb()
+{
+	usbd_poll(_usbd_dev, 10);
+}
+
+/*
+ * Set up timer to fire every x milliseconds
+ * This is a unusual usage of systick, be very careful with the 24bit range
+ * of the systick counter!  You can range from 1 to 2796ms with this.
+ */
+static void systick_setup(int xms)
+{
+	/* div8 per ST, stays compatible with M3/M4 parts, well done ST */
+	systick_set_clocksource(STK_CSR_CLKSOURCE_EXT);
+	/* clear counter so it starts right away */
+	STK_CVR = 0;
+
+	systick_set_reload(rcc_ahb_frequency / 8 / 1000 * xms);
+	systick_counter_enable();
+	
+	// enable after config descriptors have been sent
+	systick_interrupt_enable();
+}
 
 
 /* for driver */
@@ -89,8 +114,7 @@ static void target_init(void)
 	/* Enable PORT_LED, Alternate Function clocks. */
 	rcc_periph_clock_enable(RCC_LED);
 	
-	gpio_setup();
-	tim_setup();
+	pin_init(0);
 }
 
 int main(void)
@@ -98,17 +122,12 @@ int main(void)
 	target_init();
 	serial_init();
 	
-	for(uint8_t i='a';i<='z';i++)
-	{
-		serial_write(&i, 1);
-	}
-	
-	serial_write((uint8_t*)"testing123", 10);
+	systick_setup(500);
 	
 	while (1) 
 	{
 		//read_button();
-		usbd_poll(_usbd_dev, 0);
+		usb_poll_cb();
 	}
 }
 

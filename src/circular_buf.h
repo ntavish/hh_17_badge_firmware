@@ -21,5 +21,6 @@ typedef struct {
     
 int circBufPush(circBuf_t *c, uint8_t data);
 int circBufPop(circBuf_t *c, uint8_t *data);
+int circBufIsEmpty(circBuf_t *c);
 
 #endif

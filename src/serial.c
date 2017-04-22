@@ -1,7 +1,6 @@
-#include <unicore-mx/usbd/usbd.h>
-#include <unicore-mx/usb/class/cdc.h>
 #include "serial.h"
 #include "circular_buf.h"
+#include "cdcacm-target.h"
 
 #define RECV_BUF_SIZE	128
 uint8_t recv_buf_space[RECV_BUF_SIZE];
@@ -77,7 +76,7 @@ static void set_cb()
 	}
 }
 
-int serial_write(uint8_t *buf, int len)
+int serial_write(const uint8_t *buf, int len)
 {
 	int i;
 	for(i=0; i<len; i++)
@@ -90,6 +89,11 @@ int serial_write(uint8_t *buf, int len)
 		set_cb();
 	}
 	// else the data should automatically be transferred
+	
+	while(!circBufIsEmpty(&tx_buf))
+	{
+		usb_poll_cb();
+	}
 	
 	return len;
 }

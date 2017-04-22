@@ -320,7 +320,7 @@ static void cdcacm_set_config(usbd_device *usbd_dev,
 	usbd_ep_prepare(usbd_dev, 0x82, USBD_EP_BULK, 64, USBD_INTERVAL_NA, USBD_EP_NONE);
 	usbd_ep_prepare(usbd_dev, 0x83, USBD_EP_INTERRUPT, 16, USBD_INTERVAL_NA, USBD_EP_NONE);
 
-	cdc_acm_ready_cb();
+	usb_ready_cb();
 }
 
 void __attribute__((weak))

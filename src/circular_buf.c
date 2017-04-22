@@ -33,3 +33,8 @@ int circBufPop(circBuf_t *c, uint8_t *data)
     c->tail = next;             // tail to next data offset.
     return 0;  // return success to indicate successful push.
 }
+
+int circBufIsEmpty(circBuf_t *c)
+{
+	return (c->head == c->tail);
+}

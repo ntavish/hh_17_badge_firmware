@@ -26,7 +26,7 @@ UCMX_DIR ?=../lib/unicore-mx
 
 CFLAGS += -std=c99
 
-OBJS = cdcacm.o serial.o circular_buf.o
+OBJS = cdcacm.o serial.o circular_buf.o read_pins.o
 # OBJS = usbhid.o
 
 LDSCRIPT = stm32f072cb.ld

@@ -39,7 +39,9 @@ int init_cdcacm(void);
 extern usbd_device *_usbd_dev;
 
 /* signals that config descriptors have been read */
-extern void cdc_acm_ready_cb(void);
+extern void usb_ready_cb(void);
 
+// call when need to poll
+void usb_poll_cb(void);
 
 #endif
