@@ -20,7 +20,7 @@
 void sys_tick_handler(void)
 {
 	int n = num_buttons();
-	for(int i=0; i<num_buttons(); i++)
+	for(int i=0; i<n; i++)
 	{
 		if(read_pin(i) > 10)
 		{

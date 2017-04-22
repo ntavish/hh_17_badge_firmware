@@ -62,7 +62,7 @@ int read_pin(int index)
 	pupd |= GPIO_PUPD(tb->pin_num, GPIO_PUPD_PULLUP);
 	
 	//disable irqs
-	cycles = 100;
+	cycles = 25;
 	// measure how long it takes to rise to high
 	uint32_t pin = tb->pin;
 	uint32_t port = tb->port;
@@ -98,23 +98,9 @@ int read_pin(int index)
 		else if(GPIO_IDR(port) & pin) { cycles = 23; }
 		else if(GPIO_IDR(port) & pin) { cycles = 24; }
 		else if(GPIO_IDR(port) & pin) { cycles = 25; }
-		else if(GPIO_IDR(port) & pin) { cycles = 26; }
-		else if(GPIO_IDR(port) & pin) { cycles = 27; }
-		else if(GPIO_IDR(port) & pin) { cycles = 28; }
-		else if(GPIO_IDR(port) & pin) { cycles = 29; }
-		else if(GPIO_IDR(port) & pin) { cycles = 30; }
-		else if(GPIO_IDR(port) & pin) { cycles = 31; }
-		else if(GPIO_IDR(port) & pin) { cycles = 32; }
-		else if(GPIO_IDR(port) & pin) { cycles = 33; }
-		else if(GPIO_IDR(port) & pin) { cycles = 34; }
-		else if(GPIO_IDR(port) & pin) { cycles = 35; }
-		else if(GPIO_IDR(port) & pin) { cycles = 36; }
-		else if(GPIO_IDR(port) & pin) { cycles = 37; }
-		else if(GPIO_IDR(port) & pin) { cycles = 38; }
-		else if(GPIO_IDR(port) & pin) { cycles = 39; }
-		else if(GPIO_IDR(port) & pin) { cycles = 40; }
-		else if(GPIO_IDR(port) & pin) { cycles = 42; }
 	}
+	
+	// NOTE: may need to set this back to 0, to not affect others
 	
 	return cycles;
 }
