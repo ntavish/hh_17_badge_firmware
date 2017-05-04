@@ -1,7 +1,14 @@
 #ifndef __READ_PINS_H
 #define __READ_PINS_H
 
-struct touch_button
+typedef enum
+{
+	NOT_PRESSED,
+	PRESSED
+}touch_state_t;
+
+// can be digital/touch/pot.
+struct input_pin
 {
 	uint32_t port;
 	uint32_t pin;      //GPIO14
@@ -10,12 +17,16 @@ struct touch_button
 	const char *name;
 };
 
-#define BUTTON(port, pin, name)  {GPIO##port, GPIO##pin, pin, RCC_GPIO##port, name}
+#define INPUT(port, pin, name)  {GPIO##port, GPIO##pin, pin, RCC_GPIO##port, name}
 
-void pin_init(int index);
+void initialize_pins(void);
 int read_pin(int index);
-int num_buttons(void);
+int num_touch_pins(void);
+uint8_t * scan_buttons(void);
 
-extern const struct touch_button tb_table[];
+void adc_setup(void);
+uint16_t read_pot(uint8_t pot);
+
+extern const struct input_pin tb_table[];
 
 #endif

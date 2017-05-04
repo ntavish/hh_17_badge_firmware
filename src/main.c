@@ -19,7 +19,7 @@
 /* Called when systick fires */
 void sys_tick_handler(void)
 {
-	int n = num_buttons();
+	int n = num_touch_pins();
 	for(int i=0; i<n; i++)
 	{
 		if(read_pin(i) > 10)
@@ -28,6 +28,12 @@ void sys_tick_handler(void)
 			serial_write("\r\n", 2);
 		}
 	}
+	
+	uint16_t potval = read_pot(0);
+	char buf[20];
+	
+	snprintf(buf, sizeof(buf), "pot: %u\r\n", potval);
+	serial_write(buf, strnlen(buf, 20));
 }
 
 void usb_ready_cb(void)
@@ -114,13 +120,14 @@ static void target_init(void)
 	/* Enable PORT_LED, Alternate Function clocks. */
 	rcc_periph_clock_enable(RCC_LED);
 	
-	pin_init(0);
+	initialize_pins();
 }
 
 int main(void)
 {
 	target_init();
 	serial_init();
+	adc_setup();
 	
 	systick_setup(500);
 	

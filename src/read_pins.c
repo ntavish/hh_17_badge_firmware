@@ -1,42 +1,78 @@
 #include <unicore-mx/stm32/rcc.h>
 #include <unicore-mx/stm32/gpio.h>
+#include <unicore-mx/stm32/f0/adc.h>
 #include <unicore-mx/cm3/cortex.h>
 #include "read_pins.h"
 
-const struct touch_button tb_table[] = {
-	BUTTON(A, 0, "C"),
-	BUTTON(A, 1, "C#"),
-	BUTTON(A, 2, "D"),
-	BUTTON(A, 3, "D#"),
-	BUTTON(A, 6, "E"),
-	BUTTON(A, 7, "F"),
-	BUTTON(A, 9, "F#"),
-	BUTTON(A, 10, "G"),
-	BUTTON(B, 13, "G#"),
-	BUTTON(B, 14, "A"),
-	BUTTON(B, 2, "A#"),
-	BUTTON(B, 3, "B"),
-	BUTTON(B, 4, "C+"),
+// Touch buttons
+const struct input_pin tb_table[] = {
+	INPUT(A, 0, "C"),
+	INPUT(A, 1, "C#"),
+	INPUT(A, 2, "D"),
+	INPUT(A, 3, "D#"),
+	INPUT(A, 6, "E"),
+	INPUT(A, 7, "F"),
+	INPUT(A, 9, "F#"),
+	INPUT(A, 10, "G"),
+	INPUT(B, 13, "G#"),
+	INPUT(B, 14, "A"),
+	INPUT(B, 2, "A#"),
+	INPUT(B, 3, "B"),
+	INPUT(B, 4, "C+"),
+	INPUT(B, 11, "B1"),
+	INPUT(B, 12, "B2"),
 };
 
-int num_buttons()
+// States of touch buttons
+volatile touch_state_t tb_states[] = {
+	NOT_PRESSED,
+	NOT_PRESSED,
+	NOT_PRESSED,
+	NOT_PRESSED,
+	NOT_PRESSED,
+	NOT_PRESSED,
+	NOT_PRESSED,
+	NOT_PRESSED,
+	NOT_PRESSED,
+	NOT_PRESSED,
+	NOT_PRESSED,
+	NOT_PRESSED,
+	NOT_PRESSED,
+	NOT_PRESSED,
+	NOT_PRESSED,
+};
+
+int num_touch_pins(void)
 {
 	return sizeof(tb_table)/sizeof(tb_table[0]);
 }
 
-void pin_init(int index)
+static void touch_pin_init(int index)
 {
-	const struct touch_button* tb = &tb_table[index];
+	const struct input_pin* tb = &tb_table[index];
 	rcc_periph_clock_enable(tb->rcc);
 	gpio_mode_setup(tb->port, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, tb->pin);
 	gpio_set_output_options(tb->port, GPIO_OTYPE_PP, GPIO_OSPEED_2MHZ, tb->pin);
+}
+
+void initialize_pins(void)
+{
+	// For touch pins
+	int n = num_touch_pins();
+	for(int i=0; i<n; i++)
+	{
+		touch_pin_init(i);
+	}
+	
+	// for pots, init adc
+	rcc_periph_clock_enable(RCC_ADC);
 }
 
 int read_pin(int index)
 {
 	int cycles;
 
-	const struct touch_button* tb = &tb_table[index];
+	const struct input_pin* tb = &tb_table[index];
 	
 	gpio_mode_setup(tb->port, GPIO_MODE_OUTPUT, GPIO_PUPD_PULLDOWN, tb->pin);
 	gpio_set_output_options(tb->port, GPIO_OTYPE_PP, GPIO_OSPEED_2MHZ, tb->pin);
@@ -104,3 +140,55 @@ int read_pin(int index)
 	
 	return cycles;
 }
+
+
+// POTS
+
+// pots
+const struct input_pin pb_table[] = {
+	INPUT(B, 0, "PT1"),
+	INPUT(B, 1, "PT2"),
+};
+
+volatile int pot_states[] = {
+	0,
+	0,
+};
+
+void adc_setup(void)
+{
+	rcc_periph_clock_enable(RCC_ADC);
+	rcc_periph_clock_enable(RCC_GPIOB);
+
+	gpio_mode_setup(GPIOB, GPIO_MODE_ANALOG, GPIO_PUPD_NONE, GPIO0);
+	gpio_mode_setup(GPIOB, GPIO_MODE_ANALOG, GPIO_PUPD_NONE, GPIO1);
+	
+	adc_power_off(ADC1);
+	adc_set_clk_source(ADC1, ADC_CLKSOURCE_ADC);
+	rcc_periph_reset_pulse(RST_ADC1);
+	adc_calibrate_start(ADC1);
+	adc_calibrate_wait_finish(ADC1);
+	
+	adc_set_operation_mode(ADC1, ADC_MODE_SCAN);
+	adc_disable_external_trigger_regular(ADC1);
+	adc_set_right_aligned(ADC1);
+	adc_set_sample_time_on_all_channels(ADC1, ADC_SMPTIME_071DOT5);
+	uint8_t channel_array[] = {9};
+	adc_set_regular_sequence(ADC1, 1, channel_array);
+	adc_set_resolution(ADC1, ADC_RESOLUTION_12BIT);
+	adc_disable_analog_watchdog(ADC1);
+	adc_power_on(ADC1);
+
+	/* Wait for ADC starting up. */
+	int i;
+	for (i = 0; i < 800000; i++)    /* Wait a bit. */
+		__asm__("nop");
+}
+
+uint16_t read_pot(uint8_t pot)
+{
+	adc_start_conversion_regular(ADC1);
+	while (! adc_eoc(ADC1));
+	return adc_read_regular(ADC1);
+}
+
