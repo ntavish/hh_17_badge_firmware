@@ -26,9 +26,13 @@ UCMX_DIR ?=../lib/unicore-mx
 
 CFLAGS += -std=c99
 
-OBJS = cdcacm.o serial.o circular_buf.o read_pins.o
+OBJS =  serial.o circular_buf.o read_pins.o usbmidi.o
 # OBJS = usbhid.o
 
 LDSCRIPT = stm32f072cb.ld
 
 include unicore-mx.target.mk
+
+
+upload:
+	sudo dfu-util -d 0483:df11 -a 0 -s 0x08000000:leave -D main.bin
